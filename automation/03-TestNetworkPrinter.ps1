@@ -84,8 +84,37 @@ else {
     Write-Host "Installiere temporären Drucker..."
     
     try {
-        # Versuche Standard-Treiber zu verwenden
-        $DriverName = "Generic / Text Only"
+        # Suche nach verfügbaren Druckertreibern
+        Write-Host "Suche verfügbare Druckertreiber..." -ForegroundColor Cyan
+        $AvailableDrivers = Get-PrinterDriver | Select-Object -ExpandProperty Name
+        
+        # Liste bevorzugter Treiber (in Reihenfolge der Präferenz)
+        $PreferredDrivers = @(
+            "Generic / Text Only",
+            "Microsoft Print To PDF",
+            "Microsoft XPS Document Writer",
+            "Generic IBM Graphics Printer"
+        )
+        
+        # Finde den ersten verfügbaren Treiber
+        $DriverName = $null
+        foreach ($Driver in $PreferredDrivers) {
+            if ($AvailableDrivers -contains $Driver) {
+                $DriverName = $Driver
+                Write-Host "✓ Verwende Treiber: $DriverName" -ForegroundColor Green
+                break
+            }
+        }
+        
+        # Falls kein bevorzugter Treiber gefunden wurde, verwende irgendeinen
+        if (-not $DriverName -and $AvailableDrivers.Count -gt 0) {
+            $DriverName = $AvailableDrivers[0]
+            Write-Host "⚠ Verwende ersten verfügbaren Treiber: $DriverName" -ForegroundColor Yellow
+        }
+        
+        if (-not $DriverName) {
+            throw "Kein Druckertreiber gefunden! Bitte installieren Sie einen Druckertreiber."
+        }
         
         # Erstelle TCP/IP Port
         $PortName = "IP_$PrinterIP"
@@ -101,13 +130,29 @@ else {
         
         # Drucker hinzufügen
         Add-Printer -Name $PrinterName -DriverName $DriverName -PortName $PortName -ErrorAction Stop
-        Write-Host "✓ Drucker '$PrinterName' installiert" -ForegroundColor Green
+        Write-Host "✓ Drucker '$PrinterName' installiert mit Treiber '$DriverName'" -ForegroundColor Green
     }
     catch {
         Write-Host "✗ Fehler beim Installieren des Druckers: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Host "`nAlternative: Manuelle Druckerinstallation erforderlich" -ForegroundColor Yellow
-        Write-Host "1. Öffnen Sie Einstellungen → Drucker & Scanner"
-        Write-Host "2. Fügen Sie den Drucker mit IP $PrinterIP hinzu"
+        
+        # Zeige verfügbare Treiber an
+        Write-Host "`nVerfügbare Druckertreiber auf diesem System:" -ForegroundColor Yellow
+        $AllDrivers = Get-PrinterDriver -ErrorAction SilentlyContinue
+        if ($AllDrivers) {
+            $AllDrivers | Select-Object -First 10 Name | ForEach-Object { Write-Host "  - $($_.Name)" }
+            if ($AllDrivers.Count -gt 10) {
+                Write-Host "  ... und $($AllDrivers.Count - 10) weitere"
+            }
+        }
+        else {
+            Write-Host "  Keine Treiber gefunden!" -ForegroundColor Red
+        }
+        
+        Write-Host "`nLösungsvorschläge:" -ForegroundColor Yellow
+        Write-Host "1. Installieren Sie einen Standard-Druckertreiber"
+        Write-Host "2. Verwenden Sie 'Add-PrinterDriver' um einen Treiber zu installieren"
+        Write-Host "3. Manuelle Installation: Einstellungen → Drucker & Scanner → Drucker hinzufügen"
+        Write-Host "4. Öffnen Sie Print Management: printmanagement.msc"
         exit 1
     }
 }
