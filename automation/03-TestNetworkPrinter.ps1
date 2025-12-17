@@ -18,7 +18,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$false)]
-    [string]$PrinterIP = "10.24.2.195",
+    [string]$PrinterIP = "10.24.10.24",
     
     [Parameter(Mandatory=$false)]
     [string]$PrinterName = "TestPrinter_$PrinterIP"
