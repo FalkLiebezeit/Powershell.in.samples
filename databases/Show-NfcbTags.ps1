@@ -1,9 +1,17 @@
+# Write a PowerShell script that opens the SQLite database "nfcdb" in the path "C:\Users\Falk\source\repos\Databases"
+# and displays all data from the "tags" table.
+
 param(
-    [string]$DatabaseDirectory = 'C:\Users\Falk\source\repos\Databases',
-    [string]$DatabaseFile = 'nfcb'
+    [string]$DatabaseDirectory = '',
+    [string]$DatabaseFile = 'nfcdb'
 )
 
-# Sucht die Datenbankdatei, lädt die SQLite-Assembly aus libs und gibt alle Zeilen aus der Tabelle "tags" aus.
+# If DatabaseDirectory is empty, use the script directory
+if (-not $DatabaseDirectory) {
+    $DatabaseDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
+}
+
+# Searches for the database file, loads the SQLite assembly from libs, and displays all rows from the "tags" table.
 $pathCandidates = @()
 if ([IO.Path]::GetExtension($DatabaseFile)) {
     $pathCandidates += (Join-Path $DatabaseDirectory $DatabaseFile)
@@ -15,7 +23,7 @@ if ([IO.Path]::GetExtension($DatabaseFile)) {
 
 $databasePath = $pathCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $databasePath) {
-    throw "Keine Datenbankdatei gefunden. Geprüft: $($pathCandidates -join ', ')"
+    throw "No database file found. Checked: $($pathCandidates -join ', ')"
 }
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -25,7 +33,7 @@ $managedDll = Join-Path $assemblyRoot 'lib/netstandard2.1/System.Data.SQLite.dll
 $nativePath = Join-Path $assemblyRoot 'runtimes/win-x64/native'
 
 if (-not (Test-Path $managedDll)) {
-    throw "Assembly nicht gefunden: $managedDll"
+    throw "Assembly not found: $managedDll"
 }
 
 if (-not ($env:PATH.Split(';') -contains $nativePath)) {
@@ -52,7 +60,7 @@ try {
             $rows += [pscustomobject]$row
         }
         if ($rows.Count -eq 0) {
-            Write-Host 'Keine Eintraege gefunden.'
+            Write-Host 'No entries found.'
         } else {
             $rows
         }
