@@ -75,8 +75,38 @@ $vorname  = $nameData.Vorname
 $nachname = $nameData.Nachname
 $username = ($vorname.Substring(0, 1) + $nachname)
 
+function Get-RandomPassword {
+    param(
+        [int] $Length = 10
+    )
+
+    $lower   = "abcdefghijklmnopqrstuvwxyz"
+    $upper   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    $digits  = "0123456789"
+    $special = "!@#$%^&*_-+=?"
+
+    $allChars = ($lower + $upper + $digits + $special).ToCharArray()
+
+    $required = @(
+        ($lower.ToCharArray()  | Get-Random -Count 1),
+        ($upper.ToCharArray()  | Get-Random -Count 1),
+        ($digits.ToCharArray() | Get-Random -Count 1),
+        ($special.ToCharArray() | Get-Random -Count 1)
+    )
+
+    $remaining = $Length - $required.Count
+    $randomRest = @()
+    if ($remaining -gt 0) {
+        $randomRest = $allChars | Get-Random -Count $remaining
+    }
+
+    return ($required + $randomRest | Get-Random -Count $Length) -join ""
+}
+
+$password = Get-RandomPassword -Length 10
+
 $templatePath = "C:\Users\Falk\source\repos\Powershell.in.samples\Beumer\User.dotx"
-$outputPath   = "C:\Users\Falk\source\repos\Powershell.in.samples\Beumer\Personendaten_${vorname}.docx"
+$outputPath   = "C:\Users\Falk\source\repos\Powershell.in.samples\Beumer\Documents\Personendaten_${vorname}.docx"
 
 $word = New-Object -ComObject Word.Application
 $word.Visible = $false
@@ -90,6 +120,7 @@ foreach ($cc in $doc.ContentControls) {
         "Vorname"  { $cc.Range.Text = $vorname }
         "Nachname" { $cc.Range.Text = $nachname }
         "Username" { $cc.Range.Text = $username }
+        "Passwort" { $cc.Range.Text = $password }
     }
 }
 
