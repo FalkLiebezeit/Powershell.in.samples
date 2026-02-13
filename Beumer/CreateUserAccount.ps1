@@ -73,7 +73,10 @@ if (-not $nameData) {
 
 $vorname  = $nameData.Vorname
 $nachname = $nameData.Nachname
-$username = ($vorname.Substring(0, 1) + $nachname)
+$username = ($vorname.Trim().Substring(0, 1) + $nachname.Trim()) -replace "\s", ""
+if ($username.Length -gt 10) {
+    $username = $username.Substring(0, 10)
+}
 
 function Get-RandomPassword {
     param(
